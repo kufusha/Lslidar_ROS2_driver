@@ -44,7 +44,8 @@ namespace lslidar_driver {
         sweep_data_bak = std::make_unique<lslidar_msgs::msg::LslidarScan>();
 	RCLCPP_INFO(this->get_logger(),"***********************ROS driver version: ");
 	std::string ros_package_version = "ros2 pkg xml  lslidar_driver | grep '<version>' | grep -oP '(?<=>).*?(?=<)'"; 
-	system(ros_package_version.c_str());
+	int result = system(ros_package_version.c_str());
+	(void) result;
 	RCLCPP_INFO(this->get_logger(),"***********************");
         return;
     }
@@ -167,63 +168,62 @@ namespace lslidar_driver {
     bool LslidarDriver::createRosIO() {
         pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pointcloud_topic, 10);
         scan_pub = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
-        rmw_qos_profile_t qos_profile = rmw_qos_profile_default;
         lslidar_control_service_ = this->create_service<lslidar_msgs::srv::LslidarControl>("lslidar_control",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::powerOn,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         motor_control_service_ = this->create_service<lslidar_msgs::srv::MotorControl>("motor_control",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::motorControl,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         motor_speed_service_ = this->create_service<lslidar_msgs::srv::MotorSpeed>("set_motor_speed",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::motorSpeed,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         data_port_service_ = this->create_service<lslidar_msgs::srv::DataPort>("set_data_port",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::setDataPort,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         dev_port_service_ = this->create_service<lslidar_msgs::srv::DevPort>("set_dev_port",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::setDevPort,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         data_ip_service_ = this->create_service<lslidar_msgs::srv::DataIp>("set_data_ip",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::setDataIp,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         destination_ip_service_ = this->create_service<lslidar_msgs::srv::DestinationIp>("set_destination_ip",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::setDestinationIp,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
         time_service_ = this->create_service<lslidar_msgs::srv::TimeService>("time_service",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::timeService,
                                                                                                    this,
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
-                                                                                           qos_profile);
+                                                                                           rclcpp::ServicesQoS());
 
         if (dump_file != "") {
             msop_input_.reset(new lslidar_driver::InputPCAP(this, msop_udp_port, 1212, packet_rate, dump_file));

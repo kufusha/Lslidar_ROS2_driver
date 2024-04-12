@@ -123,8 +123,8 @@ namespace lslidar_driver {
                 {
                     time_t curTime = time(NULL);
                     struct tm *curTm = localtime(&curTime);
-                    char bufTime[30] = {0};
-                    sprintf(bufTime, "%d-%d-%d %d:%d:%d", curTm->tm_year + 1900, curTm->tm_mon + 1,
+                    char bufTime[64] = {0};
+                    snprintf(bufTime, sizeof(bufTime), "%d-%d-%d %d:%d:%d", curTm->tm_year + 1900, curTm->tm_mon + 1,
                             curTm->tm_mday, curTm->tm_hour, curTm->tm_min, curTm->tm_sec);
 
                     RCLCPP_WARN(private_nh_->get_logger(), "%s  lslidar poll() timeout, port: %d", bufTime,port_);
@@ -154,7 +154,7 @@ namespace lslidar_driver {
                     RCLCPP_ERROR(private_nh_->get_logger(),"recvfail");
                     return 1;
                 }
-            } else if ((size_t) nbytes == packet_size_) {
+            } else if (static_cast<int>(nbytes) == packet_size_) {
                 if (!devip_str_.empty() && sender_address.sin_addr.s_addr != devip_.s_addr) {
                     RCLCPP_ERROR(private_nh_->get_logger(), "lidar IP parameter set error,please reset in launch file");
                     continue;

@@ -4,7 +4,7 @@
 using namespace lslidar_driver;
 volatile sig_atomic_t flag = 1;
 
-static void my_handler(int sig) {
+static void my_handler([[maybe_unused]] int sig) {
     flag = 0;
 }
 

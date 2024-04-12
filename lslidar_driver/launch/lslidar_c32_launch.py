@@ -36,8 +36,8 @@ def generate_launch_description():
             node_name='rviz2',
             arguments=['-d', rviz_dir],
             output='screen')
-    elif ros_version == b'foxy\n' or ros_version == b'galactic\n' or ros_version == b'humble\n':
-        print("ROS VERSION: foxy/galactic/humble")
+    elif ros_version == b'foxy\n' or ros_version == b'galactic\n' or ros_version == b'humble\n' or ros_version == b'iron\n':
+        print("ROS VERSION: foxy/galactic/humble/iron")
         driver_node = LifecycleNode(package='lslidar_driver',
                                     namespace='c32',
                                     executable='lslidar_driver_node',

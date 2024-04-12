@@ -276,7 +276,7 @@ namespace lslidar_driver {
         rclcpp::Time timeStamp;
 
         double packet_rate;
-        int point_num;
+        unsigned int point_num;
         double current_packet_time;
         double last_packet_time;
         double current_point_time = 0.0;
