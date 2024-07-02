@@ -11,4 +11,3 @@ float64 azimuth
 float64 distance
 float64 intensity
 uint16 ring
-

@@ -19,103 +19,110 @@
 #ifndef __LSLIDAR_INPUT_H_
 #define __LSLIDAR_INPUT_H_
 
-#include <unistd.h>
-#include <stdio.h>
-#include <pcap.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <netinet/in.h>
-#include "rclcpp/rclcpp.hpp"
+#include <pcap.h>
+#include <poll.h>
+#include <signal.h>
+#include <stdio.h>
+#include <sys/file.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <sstream>
+#include <string>
+
 #include <lslidar_msgs/msg/lslidar_packet.hpp>
 #include <lslidar_msgs/msg/lslidar_point.hpp>
 #include <lslidar_msgs/msg/lslidar_scan.hpp>
-#include <string>
-#include <sstream>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <poll.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/file.h>
-#include <signal.h>
 #include <sensor_msgs/msg/time_reference.hpp>
 
-namespace lslidar_driver {
-    static uint16_t MSOP_DATA_PORT_NUMBER = 2368;   // lslidar default data port on PC
-    // static uint16_t DIFOP_DATA_PORT_NUMBER = 2369;  // lslidar default difop data port on PC
+#include "rclcpp/rclcpp.hpp"
+
+namespace lslidar_driver
+{
+static uint16_t MSOP_DATA_PORT_NUMBER = 2368;  // lslidar default data port on PC
+// static uint16_t DIFOP_DATA_PORT_NUMBER = 2369;  // lslidar default difop data port on PC
 /**
  *  从在线的网络数据或离线的网络抓包数据（pcap文件）中提取出lidar的原始数据，即packet数据包
  * @brief The Input class,
-     *
-     * @param private_nh  一个NodeHandled,用于通过节点传递参数
-     * @param port
-     * @returns 0 if successful,
-     *          -1 if end of file
-     *          >0 if incomplete packet (is this possible?)
+ *
+ * @param private_nh  一个NodeHandled,用于通过节点传递参数
+ * @param port
+ * @returns 0 if successful,
+ *          -1 if end of file
+ *          >0 if incomplete packet (is this possible?)
  */
-    class Input {
-    public:
-        Input(rclcpp::Node* private_nh, uint16_t port, int packet_size);
+class Input
+{
+public:
+  Input(rclcpp::Node * private_nh, uint16_t port, int packet_size);
 
-        virtual ~Input() {
-        }
+  virtual ~Input() {}
 
-        virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr &pkt) = 0;
+  virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr & pkt) = 0;
 
-
-    protected:
-        rclcpp::Node*  private_nh_;
-        uint16_t port_;
-        std::string devip_str_;
-        int cur_rpm_;
-        int return_mode_;
-        bool npkt_update_flag_;
-        bool add_multicast;
-        std::string group_ip;
-        int packet_size_;
-    };
+protected:
+  rclcpp::Node * private_nh_;
+  uint16_t port_;
+  std::string devip_str_;
+  int cur_rpm_;
+  int return_mode_;
+  bool npkt_update_flag_;
+  bool add_multicast;
+  std::string group_ip;
+  int packet_size_;
+};
 
 /** @brief Live lslidar input from socket. */
-    class InputSocket : public Input {
-    public:
-        InputSocket(rclcpp::Node*  private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER,int packet_size = 1212);
+class InputSocket : public Input
+{
+public:
+  InputSocket(
+    rclcpp::Node * private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212);
 
-        virtual ~InputSocket();
+  virtual ~InputSocket();
 
-        virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr &pkt);
+  virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr & pkt);
 
-
-    private:
-        int sockfd_;
-        in_addr devip_;
-
-    };
+private:
+  int sockfd_;
+  in_addr devip_;
+};
 
 /** @brief lslidar input from PCAP dump file.
-   *
-   * Dump files can be grabbed by libpcap
-   */
-    class InputPCAP : public Input {
-    public:
-        InputPCAP(rclcpp::Node* private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212, double packet_rate = 0.0,
-                  std::string filename = "");
+ *
+ * Dump files can be grabbed by libpcap
+ */
+class InputPCAP : public Input
+{
+public:
+  InputPCAP(
+    rclcpp::Node * private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212,
+    double packet_rate = 0.0, std::string filename = "");
 
-//        InputPCAP(rclcpp::Node* private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, double packet_rate = 0.0,
-//                  std::string filename = "", bool read_once = false, bool read_fast = false, double repeat_delay = 0.0);
+  //        InputPCAP(rclcpp::Node* private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, double
+  //        packet_rate = 0.0,
+  //                  std::string filename = "", bool read_once = false, bool read_fast = false,
+  //                  double repeat_delay = 0.0);
 
-        virtual ~InputPCAP();
+  virtual ~InputPCAP();
 
-        virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr &pkt);
+  virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr & pkt);
 
-    private:
-        rclcpp::Rate packet_rate_;
-        std::string filename_;
-        pcap_t *pcap_;
-        bpf_program pcap_packet_filter_;
-        char errbuf_[PCAP_ERRBUF_SIZE];
-        bool empty_;
-        bool read_once_;
-        bool read_fast_;
-        double repeat_delay_;
-    };
-}
+private:
+  rclcpp::Rate packet_rate_;
+  std::string filename_;
+  pcap_t * pcap_;
+  bpf_program pcap_packet_filter_;
+  char errbuf_[PCAP_ERRBUF_SIZE];
+  bool empty_;
+  bool read_once_;
+  bool read_fast_;
+  double repeat_delay_;
+};
+}  // namespace lslidar_driver
 
 #endif  // __LSLIDAR_INPUT_H

@@ -22,6 +22,7 @@ find_package(PCL REQUIRED)
 find_package(lslidar_msgs REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(std_msgs REQUIRED)
 #find_package(Boost REQUIRED COMPONENTS thread)
 find_package(sensor_msgs REQUIRED)
@@ -29,28 +30,50 @@ find_package(rclpy REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(PkgConfig REQUIRED)
 
+set(lslidar_driver_executable lslidar_driver_node)
+set(dependencies
+  rclcpp
+  rclcpp_lifecycle
+  std_msgs
+  lslidar_msgs
+  sensor_msgs
+  pcl_conversions
+)
+
 include_directories(
-		include
-		${PCL_INCLUDE_DIRS}
-		${Boost_INCLUDE_DIRS}
+  include
+  ${PCL_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 
 # c16 Node
-add_executable(lslidar_driver_node src/lslidar_driver_node.cpp src/lslidar_driver.cpp src/input.cpp)
-target_link_libraries(lslidar_driver_node ${rclcpp_LIBRARIES} ${libpcap_LIBRARIES} ${Boost_LIBRARIES})
-ament_target_dependencies(lslidar_driver_node rclcpp std_msgs lslidar_msgs sensor_msgs pcl_conversions)
+add_executable(${lslidar_driver_executable}
+  src/lslidar_driver_node.cpp
+  src/lslidar_driver.cpp src/input.cpp
+)
+target_link_libraries(${lslidar_driver_executable}
+  ${rclcpp_LIBRARIES}
+  ${libpcap_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+ament_target_dependencies(${lslidar_driver_executable}
+  ${dependencies}
+)
 
 install(DIRECTORY launch params rviz_cfg
-		DESTINATION share/${PROJECT_NAME})
+  DESTINATION share/${PROJECT_NAME}
+)
 
-install(TARGETS
-		lslidar_driver_node
-		DESTINATION lib/${PROJECT_NAME}
-		)
+install(TARGETS ${lslidar_driver_executable}
+  DESTINATION lib/${PROJECT_NAME}
+)
 
-ament_export_dependencies(rclcpp std_msgs lslidar_msgs sensor_msgs pcl_conversions)
-ament_export_include_directories(include ${PCL_COMMON_INCLUDE_DIRS})
+ament_export_dependencies(${dependencies})
+ament_export_include_directories(
+  include
+  ${PCL_COMMON_INCLUDE_DIRS}
+)
 
 add_definitions("-D${PROJECT_NAME}_VERSION=\"${${PROJECT_NAME}_VERSION}\"")
 ament_package()

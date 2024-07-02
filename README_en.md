@@ -25,7 +25,7 @@ To run lidar driver in ROS environment, ROS related libraries need to be install
 
 ```bash
 # install
-sudo apt-get install ros-$ROS_DISTRO-pcl-ros ros-$ROS_DISTRO-pluginlib  ros-$ROS_DISTRO-pcl-conversions 
+sudo apt-get install ros-$ROS_DISTRO-pcl-ros ros-$ROS_DISTRO-pluginlib  ros-$ROS_DISTRO-pcl-conversions
 ```
 
 3.other dependencies
