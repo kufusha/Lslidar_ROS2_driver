@@ -23,6 +23,7 @@ find_package(lslidar_msgs REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 #find_package(Boost REQUIRED COMPONENTS thread)
 find_package(sensor_msgs REQUIRED)
@@ -30,10 +31,12 @@ find_package(rclpy REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(PkgConfig REQUIRED)
 
-set(lslidar_driver_executable lslidar_driver_node)
+set(lslidar_driver_executable lslidar_driver)
+set(lslidar_driver_library ${lslidar_driver_executable}_core)
 set(dependencies
   rclcpp
   rclcpp_lifecycle
+  rclcpp_components
   std_msgs
   lslidar_msgs
   sensor_msgs
@@ -50,9 +53,21 @@ include_directories(
 # c16 Node
 add_executable(${lslidar_driver_executable}
   src/lslidar_driver_node.cpp
-  src/lslidar_driver.cpp src/input.cpp
+  src/lslidar_driver.cpp
+  src/flag_handler.cpp
+  src/input.cpp
+)
+add_library(${lslidar_driver_library} SHARED
+  src/lslidar_driver.cpp
+  src/flag_handler.cpp
+  src/input.cpp
 )
 target_link_libraries(${lslidar_driver_executable}
+  ${rclcpp_LIBRARIES}
+  ${libpcap_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+target_link_libraries(${lslidar_driver_library}
   ${rclcpp_LIBRARIES}
   ${libpcap_LIBRARIES}
   ${Boost_LIBRARIES}
@@ -60,20 +75,34 @@ target_link_libraries(${lslidar_driver_executable}
 ament_target_dependencies(${lslidar_driver_executable}
   ${dependencies}
 )
+ament_target_dependencies(${lslidar_driver_library}
+  ${dependencies}
+)
+rclcpp_components_register_nodes(${lslidar_driver_library}
+  "lslidar_driver::LslidarDriver"
+)
 
 install(DIRECTORY launch params rviz_cfg
   DESTINATION share/${PROJECT_NAME}
 )
-
 install(TARGETS ${lslidar_driver_executable}
   DESTINATION lib/${PROJECT_NAME}
 )
+install(TARGETS ${lslidar_driver_library}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+install(DIRECTORY include/
+  DESTINATION include/
+)
 
-ament_export_dependencies(${dependencies})
 ament_export_include_directories(
   include
   ${PCL_COMMON_INCLUDE_DIRS}
 )
+ament_export_libraries(${lslidar_driver_library})
+ament_export_dependencies(${dependencies})
 
 add_definitions("-D${PROJECT_NAME}_VERSION=\"${${PROJECT_NAME}_VERSION}\"")
 ament_package()

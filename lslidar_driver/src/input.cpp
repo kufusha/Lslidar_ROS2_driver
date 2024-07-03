@@ -1,4 +1,4 @@
-#include "lslidar_driver/input.h"
+#include "lslidar_driver/input.hpp"
 
 #include <cmath>
 
@@ -15,7 +15,7 @@ namespace lslidar_driver
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number.
  */
-Input::Input(rclcpp::Node * private_nh, uint16_t port, int packet_size)
+Input::Input(rclcpp_lifecycle::LifecycleNode * private_nh, uint16_t port, int packet_size)
 : private_nh_(private_nh),
   port_(port),
   packet_size_(packet_size)
@@ -48,7 +48,7 @@ Input::Input(rclcpp::Node * private_nh, uint16_t port, int packet_size)
  *  @param private_nh ROS private handle for calling node.
  *  @param port UDP port number
  */
-InputSocket::InputSocket(rclcpp::Node * private_nh, uint16_t port, int packet_size)
+InputSocket::InputSocket(rclcpp_lifecycle::LifecycleNode * private_nh, uint16_t port, int packet_size)
 : Input(private_nh, port, packet_size)
 {
   sockfd_ = -1;
@@ -201,7 +201,7 @@ int InputSocket::getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr & pkt)
  *  @param filename PCAP dump file name
  */
 InputPCAP::InputPCAP(
-  rclcpp::Node * private_nh, uint16_t port, int packet_size, double packet_rate,
+  rclcpp_lifecycle::LifecycleNode * private_nh, uint16_t port, int packet_size, double packet_rate,
   std::string filename)
 : Input(private_nh, port, packet_size),
   packet_rate_(packet_rate),

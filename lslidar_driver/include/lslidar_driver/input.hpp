@@ -16,8 +16,8 @@
  * limitations under the License.
  *****************************************************************************/
 
-#ifndef __LSLIDAR_INPUT_H_
-#define __LSLIDAR_INPUT_H_
+#ifndef __LSLIDAR_INPUT_HPP_
+#define __LSLIDAR_INPUT_HPP_
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -39,7 +39,8 @@
 #include <lslidar_msgs/msg/lslidar_scan.hpp>
 #include <sensor_msgs/msg/time_reference.hpp>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 
 namespace lslidar_driver
 {
@@ -58,14 +59,14 @@ static uint16_t MSOP_DATA_PORT_NUMBER = 2368;  // lslidar default data port on P
 class Input
 {
 public:
-  Input(rclcpp::Node * private_nh, uint16_t port, int packet_size);
+  Input(rclcpp_lifecycle::LifecycleNode * private_nh, uint16_t port, int packet_size);
 
   virtual ~Input() {}
 
   virtual int getPacket(lslidar_msgs::msg::LslidarPacket::UniquePtr & pkt) = 0;
 
 protected:
-  rclcpp::Node * private_nh_;
+  rclcpp_lifecycle::LifecycleNode * private_nh_;
   uint16_t port_;
   std::string devip_str_;
   int cur_rpm_;
@@ -81,7 +82,7 @@ class InputSocket : public Input
 {
 public:
   InputSocket(
-    rclcpp::Node * private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212);
+    rclcpp_lifecycle::LifecycleNode * private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212);
 
   virtual ~InputSocket();
 
@@ -100,7 +101,7 @@ class InputPCAP : public Input
 {
 public:
   InputPCAP(
-    rclcpp::Node * private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212,
+    rclcpp_lifecycle::LifecycleNode * private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, int packet_size = 1212,
     double packet_rate = 0.0, std::string filename = "");
 
   //        InputPCAP(rclcpp::Node* private_nh, uint16_t port = MSOP_DATA_PORT_NUMBER, double
@@ -125,4 +126,4 @@ private:
 };
 }  // namespace lslidar_driver
 
-#endif  // __LSLIDAR_INPUT_H
+#endif  // __LSLIDAR_INPUT_HPP

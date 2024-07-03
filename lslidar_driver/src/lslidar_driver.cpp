@@ -16,7 +16,7 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include "lslidar_driver/lslidar_driver.h"
+#include "lslidar_driver/lslidar_driver.hpp"
 
 #include <functional>
 #include <memory>
@@ -25,15 +25,12 @@
 
 namespace lslidar_driver
 {
-LslidarDriver::LslidarDriver()
-: LslidarDriver(rclcpp::NodeOptions())
-{
-  return;
-}
 
 LslidarDriver::LslidarDriver(const rclcpp::NodeOptions & options)
-: Node("lslidar_node", options)
+: rclcpp_lifecycle::LifecycleNode("lslidar_node", options)
 {
+  initialize_signal_handler();
+
   last_azimuth = 0;
   sweep_end_time = 0.0;
   is_first_sweep = true, return_mode = 1, packet_rate = 1695.0, current_packet_time = 0.0;
@@ -48,26 +45,8 @@ LslidarDriver::LslidarDriver(const rclcpp::NodeOptions & options)
   int result = system(ros_package_version.c_str());
   (void)result;
   RCLCPP_INFO(this->get_logger(), "***********************");
-  return;
-}
 
-bool LslidarDriver::checkPacketValidity(const lslidar_driver::RawPacket * packet)
-{
-  for (size_t blk_idx = 0; blk_idx < BLOCKS_PER_PACKET; ++blk_idx) {
-    if (packet->blocks[blk_idx].header != UPPER_BANK) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool LslidarDriver::isPointInRange(const double & distance)
-{
-  return distance >= min_range && distance < max_range;
-}
-
-bool LslidarDriver::loadParameters()
-{
+  // Declare ROS 2 params
   this->declare_parameter<std::string>("pcap", "");
   this->declare_parameter<double>("packet_rate", 1695.0);
   this->declare_parameter<std::string>("device_ip", "192.168.1.200");
@@ -90,7 +69,71 @@ bool LslidarDriver::loadParameters()
   this->declare_parameter<bool>("publish_scan", false);
   this->declare_parameter<std::string>("topic_name", "lslidar_point_cloud");
   this->declare_parameter<bool>("coordinate_opt", false);
+}
 
+CallbackReturn LslidarDriver::on_configure(const rclcpp_lifecycle::State & /*state*/)
+{
+  if (!initialize()) {
+    return CallbackReturn::FAILURE;
+  }
+
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn LslidarDriver::on_activate(const rclcpp_lifecycle::State & /*state*/)
+{
+  pointcloud_pub->on_activate();
+  scan_pub->on_activate();
+
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn LslidarDriver::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+{
+  pointcloud_pub->on_deactivate();
+  scan_pub->on_deactivate();
+
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn LslidarDriver::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+{
+  pointcloud_pub.reset();
+  scan_pub.reset();
+  lslidar_control_service_.reset();
+  motor_control_service_.reset();
+  motor_speed_service_.reset();
+  data_port_service_.reset();
+  dev_port_service_.reset();
+  data_ip_service_.reset();
+  destination_ip_service_.reset();
+  time_service_.reset();
+
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn LslidarDriver::on_shutdown(const rclcpp_lifecycle::State &)
+{
+  return CallbackReturn::SUCCESS;
+}
+
+bool LslidarDriver::checkPacketValidity(const lslidar_driver::RawPacket * packet)
+{
+  for (size_t blk_idx = 0; blk_idx < BLOCKS_PER_PACKET; ++blk_idx) {
+    if (packet->blocks[blk_idx].header != UPPER_BANK) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool LslidarDriver::isPointInRange(const double & distance)
+{
+  return distance >= min_range && distance < max_range;
+}
+
+bool LslidarDriver::loadParameters()
+{
   msop_udp_port = 0;
   difop_udp_port = 0;
   this->get_parameter("pcap", dump_file);
@@ -182,8 +225,10 @@ void LslidarDriver::initTimeStamp()
 
 bool LslidarDriver::createRosIO()
 {
-  pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(pointcloud_topic, rclcpp::SensorDataQoS());
-  scan_pub = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
+  pointcloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+    pointcloud_topic, rclcpp::SensorDataQoS());
+  scan_pub = this->create_publisher<sensor_msgs::msg::LaserScan>(
+    "scan", rclcpp::SensorDataQoS());
   lslidar_control_service_ = this->create_service<lslidar_msgs::srv::LslidarControl>(
     "lslidar_control",
     std::bind(&LslidarDriver::powerOn, this, std::placeholders::_1, std::placeholders::_2),
@@ -464,12 +509,12 @@ void LslidarDriver::publishPointcloud()
         ++point_cloud->width;
       }
     }
-    sensor_msgs::msg::PointCloud2 pc_msg;
-    pcl::toROSMsg(*point_cloud, pc_msg);
-    pointcloud_pub->publish(pc_msg);
+    auto pc_msg = std::make_unique<sensor_msgs::msg::PointCloud2>();
+    pcl::toROSMsg(*point_cloud, *pc_msg);
+    pointcloud_pub->publish(std::move(pc_msg));
     if (publish_scan) {
       sensor_msgs::msg::PointCloud2 pc_msg2;
-      sensor_msgs::msg::LaserScan::UniquePtr scan_msg(new sensor_msgs::msg::LaserScan);
+      auto scan_msg = std::make_unique<sensor_msgs::msg::LaserScan>();
       pcl::toROSMsg(*point_cloud_scan, pc_msg2);
       pointcloudToLaserscan(pc_msg2, *scan_msg);
       scan_pub->publish(std::move(scan_msg));
@@ -520,13 +565,13 @@ void LslidarDriver::publishPointcloud()
         last_point_time = current_point_time;
       }
     }
-    sensor_msgs::msg::PointCloud2 pc_msg;
-    pcl::toROSMsg(*point_cloud, pc_msg);
-    pointcloud_pub->publish(pc_msg);
+    auto pc_msg = std::make_unique<sensor_msgs::msg::PointCloud2>();
+    pcl::toROSMsg(*point_cloud, *pc_msg);
+    pointcloud_pub->publish(std::move(pc_msg));
 
     if (publish_scan) {
       sensor_msgs::msg::PointCloud2 pc_msg2;
-      sensor_msgs::msg::LaserScan::UniquePtr scan_msg(new sensor_msgs::msg::LaserScan());
+      auto scan_msg = std::make_unique<sensor_msgs::msg::LaserScan>();
       pcl::toROSMsg(*point_cloud_scan, pc_msg2);
       pointcloudToLaserscan(pc_msg2, *scan_msg);
       scan_pub->publish(std::move(scan_msg));
@@ -537,7 +582,7 @@ void LslidarDriver::publishPointcloud()
 
 void LslidarDriver::publishScan()
 {
-  sensor_msgs::msg::LaserScan::UniquePtr scan(new sensor_msgs::msg::LaserScan);
+  auto scan = std::make_unique<sensor_msgs::msg::LaserScan>();
   int layer_num_local = scan_num;
   RCLCPP_INFO(this->get_logger(), "default channel is %d", layer_num_local);
 
@@ -1382,3 +1427,6 @@ void LslidarDriver::pollThread(void)
 }
 
 }  // namespace lslidar_driver
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(lslidar_driver::LslidarDriver)

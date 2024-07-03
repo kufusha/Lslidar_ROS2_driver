@@ -16,19 +16,22 @@
  * limitations under the License.
  *****************************************************************************/
 
-#ifndef _LS_C16_DRIVER_H_
-#define _LS_C16_DRIVER_H_
+#ifndef _LS_C16_DRIVER_HPP_
+#define _LS_C16_DRIVER_HPP_
 
 #define DEG_TO_RAD 0.017453293
 #define RAD_TO_DEG 57.29577951
 
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <string>
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
+#include <rclcpp_lifecycle/lifecycle_publisher.hpp>
 // #include <pcl_ros/impl/transforms.hpp>
-#include <pcl_conversions/pcl_conversions.h>
+
 // #include <boost/shared_ptr.hpp>
 // #include <boost/thread.hpp>
 #include <memory>
@@ -36,11 +39,6 @@
 
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-// #include <sensor_msgs/msg/laser_scan.h>
-#include "input.h"
-// #include <pcl_ros/point_cloud.h>
-// #include <sensor_msgs/msg/point_cloud.h>
-#include <std_msgs/msg/string.h>
 
 #include <atomic>
 #include <regex>
@@ -56,6 +54,9 @@
 #include <lslidar_msgs/srv/motor_control.hpp>
 #include <lslidar_msgs/srv/motor_speed.hpp>
 #include <lslidar_msgs/srv/time_service.hpp>
+
+#include "lslidar_driver/flag_handler.hpp"
+#include "lslidar_driver/input.hpp"
 
 namespace lslidar_driver
 {
@@ -159,12 +160,13 @@ struct PointXYZIRT
 
 static std::string lidar_type;
 
-class LslidarDriver : public rclcpp::Node
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+class LslidarDriver : public rclcpp_lifecycle::LifecycleNode
 {
 public:
-  LslidarDriver();
-
-  LslidarDriver(const rclcpp::NodeOptions & options);
+  LslidarDriver(
+    const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   virtual ~LslidarDriver() {}
 
@@ -233,6 +235,12 @@ public:
   void decodePacket(const RawPacket * packet);
 
 public:
+  CallbackReturn on_configure(const rclcpp_lifecycle::State & /*state*/);
+  CallbackReturn on_activate(const rclcpp_lifecycle::State & /*state*/);
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State & /*state*/);
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State & /*state*/);
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State & /*state*/);
+
   int msop_udp_port;
   int difop_udp_port;
   int scan_num;
@@ -274,8 +282,8 @@ public:
   lslidar_msgs::msg::LslidarScan::UniquePtr sweep_data;
   lslidar_msgs::msg::LslidarScan::UniquePtr sweep_data_bak;
   std::mutex pointcloud_lock;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_pub;
-  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub;
+  rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_pub;
+  rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub;
   rclcpp::Service<lslidar_msgs::srv::LslidarControl>::SharedPtr lslidar_control_service_;  // 上下电
   rclcpp::Service<lslidar_msgs::srv::MotorControl>::SharedPtr
     motor_control_service_;                                                  // 雷达转动/停转
