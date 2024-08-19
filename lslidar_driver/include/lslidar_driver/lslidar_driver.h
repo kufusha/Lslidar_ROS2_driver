@@ -220,8 +220,8 @@ namespace lslidar_driver {
         int msop_udp_port;
         int difop_udp_port;
         int scan_num;
-        int angle_disable_min;
-        int angle_disable_max;
+        int angle_min;
+        int angle_max;
         uint16_t last_azimuth;
         uint64_t packet_time_s;
         uint64_t packet_time_ns;

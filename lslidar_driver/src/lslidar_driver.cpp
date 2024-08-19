@@ -79,8 +79,8 @@ namespace lslidar_driver {
         this->declare_parameter<double>("max_range", 150.0);
         this->declare_parameter<std::string>("frame_id", "laser_link");
         this->declare_parameter<double>("distance_unit", 0.25);
-        this->declare_parameter<int>("angle_disable_min", 0);
-        this->declare_parameter<int>("angle_disable_max", 0);
+        this->declare_parameter<int>("angle_min", 0);
+        this->declare_parameter<int>("angle_max", 0);
         this->declare_parameter<double>("horizontal_angle_resolution", 0.18);
         this->declare_parameter<int>("scan_num", 15);
         this->declare_parameter<bool>("publish_scan", false);
@@ -104,8 +104,8 @@ namespace lslidar_driver {
         this->get_parameter("max_range", max_range);
         this->get_parameter("frame_id", frame_id);
         this->get_parameter("distance_unit", distance_unit);
-        this->get_parameter("angle_disable_min", angle_disable_min);
-        this->get_parameter("angle_disable_max", angle_disable_max);
+        this->get_parameter("angle_min", angle_min);
+        this->get_parameter("angle_max", angle_max);
         this->get_parameter("horizontal_angle_resolution", horizontal_angle_resolution);
         this->get_parameter("scan_num", scan_num);
         this->get_parameter("publish_scan", publish_scan);
@@ -127,8 +127,8 @@ namespace lslidar_driver {
         RCLCPP_INFO(this->get_logger(), "max_range: %f", max_range);
         RCLCPP_INFO(this->get_logger(), "frame_id: %s", frame_id.c_str());
         RCLCPP_INFO(this->get_logger(), "distance_unit: %f", distance_unit);
-        RCLCPP_INFO(this->get_logger(), "angle_disable_min: %d", angle_disable_min);
-        RCLCPP_INFO(this->get_logger(), "angle_disable_max: %d", angle_disable_max);
+        RCLCPP_INFO(this->get_logger(), "angle_min: %d", angle_min);
+        RCLCPP_INFO(this->get_logger(), "angle_max: %d", angle_max);
         RCLCPP_INFO(this->get_logger(), "horizontal_angle_resolution: %f", horizontal_angle_resolution);
         RCLCPP_INFO(this->get_logger(), "scan_num: %d", scan_num);
         RCLCPP_INFO(this->get_logger(), "publish_scan: %d", publish_scan);
@@ -430,24 +430,23 @@ namespace lslidar_driver {
             pcl::PointXYZI scan_point;
             if (!sweep_data_bak->points.empty()) {
                 for (j = 0; j < sweep_data_bak->points.size(); ++j) {
-                    if ((sweep_data_bak->points[j].azimuth > angle_disable_min) &&
-                        (sweep_data_bak->points[j].azimuth < angle_disable_max)) {
-                        continue;
-                    }
-                    if (scan_num == sweep_data_bak->points[j].ring) {
-                        scan_point.x = sweep_data_bak->points[j].x;
-                        scan_point.y = sweep_data_bak->points[j].y;
-                        scan_point.z = sweep_data_bak->points[j].z;
-                        scan_point.intensity = sweep_data_bak->points[j].intensity;
-                        point_cloud_scan->points.push_back(scan_point);
-                        ++point_cloud_scan->width;
-                    }
-                    point.x = sweep_data_bak->points[j].x;
-                    point.y = sweep_data_bak->points[j].y;
-                    point.z = sweep_data_bak->points[j].z;
-                    point.intensity = sweep_data_bak->points[j].intensity;
-                    point_cloud->points.push_back(point);
-                    ++point_cloud->width;
+                    if ((sweep_data_bak->points[j].azimuth > angle_min) &&
+                        (sweep_data_bak->points[j].azimuth < angle_max)) {
+                        if (scan_num == sweep_data_bak->points[j].ring) {
+                            scan_point.x = sweep_data_bak->points[j].x;
+                            scan_point.y = sweep_data_bak->points[j].y;
+                            scan_point.z = sweep_data_bak->points[j].z;
+                            scan_point.intensity = sweep_data_bak->points[j].intensity;
+                            point_cloud_scan->points.push_back(scan_point);
+                            ++point_cloud_scan->width;
+                        }
+                        point.x = sweep_data_bak->points[j].x;
+                        point.y = sweep_data_bak->points[j].y;
+                        point.z = sweep_data_bak->points[j].z;
+                        point.intensity = sweep_data_bak->points[j].intensity;
+                        point_cloud->points.push_back(point);
+                        ++point_cloud->width;
+	            }
                 }
             }
             sensor_msgs::msg::PointCloud2 pc_msg;
@@ -476,32 +475,31 @@ namespace lslidar_driver {
             double first_point_time = sweep_data_bak->points[0].time;
             if (!sweep_data_bak->points.empty()) {
                 for (j = 0; j < sweep_data_bak->points.size(); ++j) {
-                    if ((sweep_data_bak->points[j].azimuth > angle_disable_min) &&
-                        (sweep_data_bak->points[j].azimuth < angle_disable_max)) {
-                        continue;
-                    }
-                    if (scan_num == sweep_data_bak->points[j].ring) {
-                        scan_point.x = sweep_data_bak->points[j].x;
-                        scan_point.y = sweep_data_bak->points[j].y;
-                        scan_point.z = sweep_data_bak->points[j].z;
-                        scan_point.intensity = sweep_data_bak->points[j].intensity;
-                        point_cloud_scan->points.push_back(scan_point);
-                        ++point_cloud_scan->width;
-                    }
+                    if ((sweep_data_bak->points[j].azimuth > angle_min) &&
+                        (sweep_data_bak->points[j].azimuth < angle_max)) {
+                        if (scan_num == sweep_data_bak->points[j].ring) {
+                            scan_point.x = sweep_data_bak->points[j].x;
+                            scan_point.y = sweep_data_bak->points[j].y;
+                            scan_point.z = sweep_data_bak->points[j].z;
+                            scan_point.intensity = sweep_data_bak->points[j].intensity;
+                            point_cloud_scan->points.push_back(scan_point);
+                            ++point_cloud_scan->width;
+                        }
 
-                    point.x = sweep_data_bak->points[j].x;
-                    point.y = sweep_data_bak->points[j].y;
-                    point.z = sweep_data_bak->points[j].z;
-                    point.intensity = sweep_data_bak->points[j].intensity;
-                    point.ring = sweep_data_bak->points[j].ring;
-                    point.time = sweep_data_bak->points[j].time - first_point_time;
-                    point_cloud->points.push_back(point);
-                    ++point_cloud->width;
-                    current_point_time = point.time;
-                    if (current_point_time - last_point_time < 0.0) {
-                        //ROS_WARN("timestamp is rolled back! current point time: %.12f  last point time: %.12f", current_point_time, last_point_time);
-                    }
-                    last_point_time = current_point_time;
+                        point.x = sweep_data_bak->points[j].x;
+                        point.y = sweep_data_bak->points[j].y;
+                        point.z = sweep_data_bak->points[j].z;
+                        point.intensity = sweep_data_bak->points[j].intensity;
+                        point.ring = sweep_data_bak->points[j].ring;
+                        point.time = sweep_data_bak->points[j].time - first_point_time;
+                        point_cloud->points.push_back(point);
+                        ++point_cloud->width;
+                        current_point_time = point.time;
+                        if (current_point_time - last_point_time < 0.0) {
+                            //ROS_WARN("timestamp is rolled back! current point time: %.12f  last point time: %.12f", current_point_time, last_point_time);
+                        }
+                        last_point_time = current_point_time;
+		    }
                 }
             }
             sensor_msgs::msg::PointCloud2 pc_msg;
