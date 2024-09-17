@@ -38,6 +38,7 @@ rosidl_generate_interfaces(lslidar_msgs
         "srv/LslidarControl.srv"
         "srv/MotorControl.srv"
         "srv/MotorSpeed.srv"
+        "srv/RemoveControl.srv"
         "srv/TimeService.srv"
         DEPENDENCIES builtin_interfaces std_msgs sensor_msgs
         )

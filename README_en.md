@@ -231,6 +231,20 @@ ros2 service call /xx/set_motor_speed lslidar_msgs/srv/MotorSpeed "{motor_speed:
 
 
 
+### Set lidar to remove rain, fog, and dust levels:
+
+Only supports 4.0 lidar
+
+source install/setup.bash
+
+Optional level 0/1/2/3, the larger the number from 0 to 3, stronger the removal
+
+~~~bash
+ros2 service call /xx/remove_control lslidar_msgs/srv/RemoveControl "{remove_control: 0}"   #Note: xx is the namespace, such as cx
+~~~
+
+
+
 ### Set lidar data packet port
 
 source install/setup.bash

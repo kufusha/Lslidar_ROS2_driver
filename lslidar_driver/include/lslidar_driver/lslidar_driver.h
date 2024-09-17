@@ -47,6 +47,7 @@
 #include <lslidar_msgs/srv/lslidar_control.hpp>
 #include <lslidar_msgs/srv/motor_control.hpp>
 #include <lslidar_msgs/srv/motor_speed.hpp>
+#include <lslidar_msgs/srv/remove_control.hpp>
 #include <lslidar_msgs/srv/time_service.hpp>
 
 
@@ -214,6 +215,9 @@ namespace lslidar_driver {
         bool motorControl(std::shared_ptr<lslidar_msgs::srv::MotorControl::Request> req,
                           std::shared_ptr<lslidar_msgs::srv::MotorControl::Response> res);
 
+        bool removeControl(std::shared_ptr<lslidar_msgs::srv::RemoveControl::Request> req,
+                           std::shared_ptr<lslidar_msgs::srv::RemoveControl::Response> res);
+
         bool motorSpeed(std::shared_ptr<lslidar_msgs::srv::MotorSpeed::Request> req,
                         std::shared_ptr<lslidar_msgs::srv::MotorSpeed::Response> res);
 
@@ -296,6 +300,7 @@ namespace lslidar_driver {
         rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub;
         rclcpp::Service<lslidar_msgs::srv::LslidarControl>::SharedPtr lslidar_control_service_;      //上下电
         rclcpp::Service<lslidar_msgs::srv::MotorControl>::SharedPtr motor_control_service_;          //雷达转动/停转
+        rclcpp::Service<lslidar_msgs::srv::RemoveControl>::SharedPtr remove_control_service_;
         rclcpp::Service<lslidar_msgs::srv::TimeService>::SharedPtr time_service_;                    //授时
         rclcpp::Service<lslidar_msgs::srv::MotorSpeed>::SharedPtr motor_speed_service_;              //雷达频率
         rclcpp::Service<lslidar_msgs::srv::DataPort>::SharedPtr data_port_service_;                  //数据包端口
@@ -337,6 +342,7 @@ namespace lslidar_driver {
         bool is_msc16 = true;
         bool angle_change{};
         int ring_;
+        int remove_rain_flag;
         int fpga_type{};
         int conversionAngle{};
         int config_vertical_angle_flag{};

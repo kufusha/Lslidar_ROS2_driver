@@ -340,6 +340,9 @@ namespace lslidar_driver {
                 } else if(difop_packet_ptr->data[1198] == 0x07 || (difop_packet_ptr->data[1198] & 0x0F) == 4) {
                     fpga_type = 4;
                     time_service_mode_ = difop_packet_ptr->data[45];
+                    remove_rain_flag = difop_packet_ptr->data[110];
+                    RCLCPP_INFO_ONCE(this->get_logger(), "Remove rain, fog, and dust, level: %d", remove_rain_flag);
+
                     if (is_msc16 && difop_packet_ptr->data[1198] / 16 == 7 && difop_packet_ptr->data[1202] / 16 == 7) {
                         for (int j = 0; j < 16; ++j) {
                             int adjust_angle_ = difop_packet_ptr->data[680 + 2 * j] * 256 + difop_packet_ptr->data[681 + 2 * j];
@@ -1221,6 +1224,49 @@ namespace lslidar_driver {
         res->result = true;
         sendPacketTolidar(config_data);
         LS_MSG << "Motor speed: " << req->motor_speed << " HZ, set successfully!" << LS_END;
+        return true;
+    }
+
+    bool LslidarDriver::removeControl(std::shared_ptr<lslidar_msgs::srv::RemoveControl::Request> req,
+                                      std::shared_ptr<lslidar_msgs::srv::RemoveControl::Response> res) {
+        if (3 == fpga_type) {
+            res->result = 0;
+            RCLCPP_WARN(this->get_logger(), "This lidar does not have this function!");
+            return true;
+        }
+
+        if (!is_get_difop_) {
+            res->result = 0;
+            RCLCPP_ERROR(this->get_logger(), "Can not get dev packet! Set failed!");
+            return true;
+        }
+
+        unsigned char config_data[1206];
+        mempcpy(config_data, difop_data, 1206);
+        if (config_data[0] != 0xa5 || config_data[1] != 0xff || config_data[2] != 0x00 || config_data[3] != 0x5a) {
+            res->result = 0;
+            RCLCPP_ERROR(this->get_logger(), "Can not get dev packet! Set failed!");
+            return true;
+        }
+        setPacketHeader(config_data);
+        is_get_difop_ = false;
+
+        if (req->remove_control == 0) {
+            config_data[110] = 0x00;
+        } else if (req->remove_control == 1) {
+            config_data[110] = 0x01;
+        } else if (req->remove_control == 2) {
+            config_data[110] = 0x02;
+        }else if(req->remove_control == 3) {
+            config_data[110] = 0x03;
+        }else {
+            RCLCPP_ERROR(this->get_logger(), "Parameter error, please check the input parameters");
+            res->result = false;
+            return true;
+        }
+        res->result = true;
+        sendPacketTolidar(config_data);
+        RCLCPP_INFO(this->get_logger(), "Set successfully, Remove rain, fog, and dust, level: %d",req->remove_control);
         return true;
     }
 
