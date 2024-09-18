@@ -161,6 +161,13 @@ namespace lslidar_driver {
                                                                                                    std::placeholders::_1,
                                                                                                    std::placeholders::_2),
                                                                                            qos_profile);
+        remove_control_service_ = this->create_service<lslidar_msgs::srv::RemoveControl>("remove_control",
+                                                                                           std::bind(
+                                                                                                   &LslidarDriver::removeControl,
+                                                                                                   this,
+                                                                                                   std::placeholders::_1,
+                                                                                                   std::placeholders::_2),
+                                                                                           qos_profile);
         motor_speed_service_ = this->create_service<lslidar_msgs::srv::MotorSpeed>("set_motor_speed",
                                                                                            std::bind(
                                                                                                    &LslidarDriver::motorSpeed,
